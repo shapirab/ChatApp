@@ -11,5 +11,7 @@ namespace ChatApp.data.DbContexts
 {
     public class AppDbContext(DbContextOptions options) : IdentityDbContext<UserEntity>(options)
     {
+        public DbSet<ChatItemEntity> ChatItems { get; set; }
+        public DbSet<ChatRoomEntity> ChatRooms { get; set; }
     }
 }
