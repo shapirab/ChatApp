@@ -13,6 +13,10 @@ namespace ChatApp.data.DataModels.Entities
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
+        [Required]
+        public string UserId { get; set; } = null!;
+        [ForeignKey("UserId")]
+        public UserEntity? User { get; set; }
         public string? Message { get; set; }
         public DateTime CreatedAt { get; set; }
     }

@@ -13,8 +13,8 @@ namespace ChatApp.data.DataModels.Entities
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public IEnumerable<UserEntity> RegisteredMembers { get; set; } = [];
-        public IEnumerable<UserEntity> ActiveMembers { get; set; } = [];
-        public IEnumerable<ChatItemEntity> ChatItems { get; set; } = [];
+        public ICollection<UserEntity> RegisteredMembers { get; set; } = [];
+        public ICollection<UserEntity> ActiveMembers { get; set; } = [];
+        public ICollection<ChatItemEntity> ChatItems { get; set; } = [];
     }
 }

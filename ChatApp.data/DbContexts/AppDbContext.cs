@@ -1,4 +1,5 @@
-﻿using ChatApp.data.DataModels.Entities;
+﻿using ChatApp.data.Config;
+using ChatApp.data.DataModels.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -13,5 +14,11 @@ namespace ChatApp.data.DbContexts
     {
         public DbSet<ChatItemEntity> ChatItems { get; set; }
         public DbSet<ChatRoomEntity> ChatRooms { get; set; }
+
+        override protected void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+            builder.ApplyConfigurationsFromAssembly(typeof(ChatRoomConfiguration).Assembly);
+        }
     }
 }
