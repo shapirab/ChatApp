@@ -115,6 +115,17 @@ namespace ChatApp.data.Services.Implementation.SqlServer
             }
         }
 
+        public async Task RemoveMessageFromChatRoomAsync(int chatRoomId, int messageId)
+        {
+            ChatRoomEntity? chatRoom = await db.ChatRooms.FindAsync(chatRoomId);
+            ChatItemEntity? message = await db.ChatItems.FindAsync(messageId);
+
+            if (chatRoom != null && message != null)
+            {
+                chatRoom.ChatItems.Remove(message);
+            }
+        }
+
         public async Task<bool> SaveChangesAsync()
         {
             return await db.SaveChangesAsync() > 0;

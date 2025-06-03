@@ -12,6 +12,7 @@ namespace ChatApp.api.Extensions
             services.AddSwaggerGen();
 
             services.AddScoped<IChatRoomService, ChatRoomService>();
+            services.AddScoped<IChatItemService, ChatItemService>();
             services.AddScoped<IUserService, UserService>();
             return services;
         }

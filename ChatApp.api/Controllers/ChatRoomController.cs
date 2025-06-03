@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ChatApp.data.DataModels.DTOs.ChatRooms;
 using ChatApp.data.DataModels.Entities;
 using ChatApp.data.Services.Interface;
 using Microsoft.AspNetCore.Http;
@@ -9,7 +10,8 @@ namespace ChatApp.api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ChatRoomController(IChatRoomService chatRoomService, IUserService userService, IMapper mapper) : ControllerBase
+    public class ChatRoomController(IChatRoomService chatRoomService, IChatItemService chatItemService,
+        IUserService userService, IMapper mapper) : ControllerBase
     {
         private int maxPageSize = 20;
 
@@ -28,7 +30,7 @@ namespace ChatApp.api.Controllers
             return Ok(chatRoomEntities);
         }
 
-        [HttpGet("${id:int}")]
+        [HttpGet("{id:int}")]
         public async Task<ActionResult<ChatRoomEntity>> GetChatRoomByIdAsync(int id)
         {
             var chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(id);
@@ -40,13 +42,14 @@ namespace ChatApp.api.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<bool>> CreateChatRoomAsync(ChatRoomEntity chatRoom)
+        public async Task<ActionResult<bool>> CreateChatRoomAsync(ChatRoomToAdd chatRoomToAdd)
         {
+            ChatRoomEntity chatRoom = mapper.Map<ChatRoomEntity>(chatRoomToAdd);
             await chatRoomService.CreateChatRoomAsync(chatRoom);
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
-        [HttpDelete("${id:int}")]
+        [HttpDelete("{id:int}")]
         public async Task<ActionResult<bool>> DeleteChatRoomAsync(int id)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(id);
@@ -58,7 +61,7 @@ namespace ChatApp.api.Controllers
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
-        [HttpPost("${chatRoomId:int}/members/${memberId:int}")]
+        [HttpPost("{chatRoomId:int}/members/${memberId:int}")]
         public async Task<ActionResult<bool>> AddMemberToChatRoomAsync(int chatRoomId, string memberEmail)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
@@ -77,7 +80,7 @@ namespace ChatApp.api.Controllers
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
-        [HttpDelete("${chatRoomId:int}/members/${memberId:int}")]
+        [HttpDelete("{chatRoomId:int}/members/${memberId:int}")]
         public async Task<ActionResult<bool>> removeMemberFromChatRoomAsync(int chatRoomId, string memberEmail)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
@@ -96,7 +99,7 @@ namespace ChatApp.api.Controllers
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
-        [HttpPost("${chatRoomId:int}/messages")]
+        [HttpPost("{chatRoomId:int}/messages")]
         public async Task<ActionResult<bool>> AddMessageToChatRoomAsync(int chatRoomId, ChatItemEntity message)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
@@ -104,25 +107,32 @@ namespace ChatApp.api.Controllers
             {
                 return BadRequest("Chat room with provided id was not found");
             }
+
+            UserEntity? user = chatRoomEntity.RegisteredMembers.FirstOrDefault(member => member.Id == message.UserId);
+            if(user == null)
+            {
+                return BadRequest("User with provided id is not registered in the chat room");
+            }
+
             await chatRoomService.AddMessageToChatRoomAsync(chatRoomId, message);
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
-        //[HttpDelete("${chatRoomId:int}/messages/${messageId:int}")]
-        //public async Task<ActionResult<bool>> RemoveMessageFromChatRoomAsync(int chatRoomId, int messageId)
-        //{
-        //    ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
-        //    if (chatRoomEntity == null)
-        //    {
-        //        return BadRequest("Chat room with provided id was not found");
-        //    }
-        //    ChatItemEntity? message = await chatRoomService.GetMessageByIdAsync(messageId);
-        //    if (message == null)
-        //    {
-        //        return BadRequest("Message with provided id was not found");
-        //    }
-        //    await chatRoomService.RemoveMessageFromChatRoomAsync(chatRoomId, messageId);
-        //    return Ok(await chatRoomService.SaveChangesAsync());
-        //}
+        [HttpDelete("{chatRoomId:int}/messages/${messageId:int}")]
+        public async Task<ActionResult<bool>> RemoveMessageFromChatRoomAsync(int chatRoomId, int messageId)
+        {
+            ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
+            if (chatRoomEntity == null)
+            {
+                return BadRequest("Chat room with provided id was not found");
+            }
+            ChatItemEntity? message = await chatItemService.GetChatItemByIdAsync(messageId);
+            if (message == null)
+            {
+                return BadRequest("Message with provided id was not found");
+            }
+            await chatRoomService.RemoveMessageFromChatRoomAsync(chatRoomId, messageId);
+            return Ok(await chatRoomService.SaveChangesAsync());
+        }
     }
 }
