@@ -15,8 +15,10 @@ namespace ChatApp.data.Services.Interface
         Task<ChatRoomEntity?> GetChatRoomByIdAsync(int chatRoomId);
         Task CreateChatRoomAsync(ChatRoomEntity chatRoom);
         Task DeleteChatRoomAsync(int chatRoomId);
-        Task AddMemberToChatRoomAsync(int chatRoomId, string username);
-        Task RemoveMemberFromChatRoomAsync(int chatRoomId, string username);
+        Task AddRegisteredMemberToChatRoomAsync(int chatRoomId, string username);
+        Task RemoveRegisteredMemberFromChatRoomAsync(int chatRoomId, string username);
+        Task AddActiveMemberToChatRoomAsync(int chatRoomId, string userEmail);
+        Task RemoveActiveMemberFromChatRoomAsync(int chatRoomId, string userEmail);
         Task AddMessageToChatRoomAsync(int chatRoomId, ChatItemEntity message);
         Task RemoveMessageFromChatRoomAsync(int chatRoomId, int messageId);
         Task<bool> SaveChangesAsync();

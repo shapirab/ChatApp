@@ -61,8 +61,27 @@ namespace ChatApp.api.Controllers
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
-        [HttpPost("{chatRoomId:int}/members/${memberId:int}")]
-        public async Task<ActionResult<bool>> AddMemberToChatRoomAsync(int chatRoomId, string memberEmail)
+        [HttpPost("members-register/{chatRoomId:int}")]
+        public async Task<ActionResult<bool>> AddRegisteredMemberToChatRoomAsync(int chatRoomId, [FromQuery]string memberEmail)
+        {
+            ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
+            if (chatRoomEntity == null)
+            {
+                return BadRequest("Chat room with provided id was not found");
+            }
+
+            UserEntity? memberEntity = await userService.GetUserByEmailAsync(memberEmail);
+            if (memberEntity == null)
+            {
+                return BadRequest("User with provided email was not found");
+            }
+            chatRoomEntity.RegisteredMembers.Add(memberEntity);
+            //await chatRoomService.AddRegisteredMemberToChatRoomAsync(chatRoomId, memberEmail);
+            return Ok(await chatRoomService.SaveChangesAsync());
+        }
+
+        [HttpDelete("members-register/{chatRoomId:int}")]
+        public async Task<ActionResult<bool>> RemoveRegisteredMemberFromChatRoomAsync(int chatRoomId, [FromQuery]string memberEmail)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
             if (chatRoomEntity == null)
@@ -76,12 +95,48 @@ namespace ChatApp.api.Controllers
                 return BadRequest("User with provided email was not found");
             }
 
-            await chatRoomService.AddMemberToChatRoomAsync(chatRoomId, memberEntity.Id);
+            var activeUser = chatRoomEntity.ActiveMembers.FirstOrDefault(user => user.Email == memberEntity.Email);
+            if (activeUser != null)
+            {
+                return BadRequest("An active user cannot unregister. Please disactivate user");
+            }
+
+            var registeredUser = chatRoomEntity.RegisteredMembers.FirstOrDefault(user => user.Email == memberEntity.Email);
+            if (registeredUser == null)
+            {
+                return BadRequest("User is already unregistered to the room");
+            }
+
+            await chatRoomService.RemoveRegisteredMemberFromChatRoomAsync(chatRoomId, memberEmail);
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
-        [HttpDelete("{chatRoomId:int}/members/${memberId:int}")]
-        public async Task<ActionResult<bool>> removeMemberFromChatRoomAsync(int chatRoomId, string memberEmail)
+        [HttpPost("members-active/{chatRoomId:int}")]
+        public async Task<ActionResult<bool>> AddActiveMemberToChatRoomAsync(int chatRoomId, [FromQuery] string memberEmail)
+        {
+            ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
+            if (chatRoomEntity == null)
+            {
+                return BadRequest("Chat room with provided id was not found");
+            }
+
+            UserEntity? memberEntity = await userService.GetUserByEmailAsync(memberEmail);
+            if (memberEntity == null)
+            {
+                return BadRequest("User with provided email was not found");
+            }
+            var registeredUser = chatRoomEntity.RegisteredMembers.FirstOrDefault(user => user.Email == memberEntity.Email);
+            if (registeredUser == null)
+            {
+                return BadRequest("User must be registered to the chat room in order to become active");
+            }
+            chatRoomEntity.ActiveMembers.Add(registeredUser);
+            //await chatRoomService.AddActiveMemberToChatRoomAsync(chatRoomId, memberEmail);
+            return Ok(await chatRoomService.SaveChangesAsync());
+        }
+
+        [HttpDelete("members-active/{chatRoomId:int}")]
+        public async Task<ActionResult<bool>> RemoveActiveMemberFromChatRoomAsync(int chatRoomId, [FromQuery] string memberEmail)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
             if (chatRoomEntity == null)
@@ -95,11 +150,17 @@ namespace ChatApp.api.Controllers
                 return BadRequest("User with provided email was not found");
             }
 
-            await chatRoomService.RemoveMemberFromChatRoomAsync(chatRoomId, memberEntity.Id);
+            var activeUser = chatRoomEntity.ActiveMembers.FirstOrDefault(user => user.Email == memberEntity.Email);
+            if (activeUser == null)
+            {
+                return BadRequest("User is already non active");
+            }
+
+            await chatRoomService.RemoveActiveMemberFromChatRoomAsync(chatRoomId, memberEmail);
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
-        [HttpPost("{chatRoomId:int}/messages")]
+        [HttpPost("messages/{chatRoomId:int}")]
         public async Task<ActionResult<bool>> AddMessageToChatRoomAsync(int chatRoomId, ChatItemEntity message)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
@@ -108,18 +169,18 @@ namespace ChatApp.api.Controllers
                 return BadRequest("Chat room with provided id was not found");
             }
 
-            UserEntity? user = chatRoomEntity.RegisteredMembers.FirstOrDefault(member => member.Id == message.UserId);
-            if(user == null)
+            UserEntity? user = chatRoomEntity.ActiveMembers.FirstOrDefault(member => member.Id == message.UserId);
+            if(user == null || string.IsNullOrEmpty(user.Email))
             {
-                return BadRequest("User with provided id is not registered in the chat room");
+                return BadRequest("User with provided id is not active in the chat room");
             }
-
-            await chatRoomService.AddMessageToChatRoomAsync(chatRoomId, message);
+            
+            await chatRoomService.RemoveActiveMemberFromChatRoomAsync(chatRoomId, user.Email);
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
-        [HttpDelete("{chatRoomId:int}/messages/${messageId:int}")]
-        public async Task<ActionResult<bool>> RemoveMessageFromChatRoomAsync(int chatRoomId, int messageId)
+        [HttpDelete("messages/{chatRoomId:int}")]
+        public async Task<ActionResult<bool>> RemoveMessageFromChatRoomAsync(int chatRoomId, [FromQuery]int messageId)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
             if (chatRoomEntity == null)

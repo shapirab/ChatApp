@@ -18,6 +18,8 @@ namespace ChatApp.data.Services.Implementation.SqlServer
             return await db.ChatRooms
                 .OrderBy(chatRoom => chatRoom.Id)
                 .Include(chatRoom => chatRoom.ChatItems)
+                .Include(chatRoom => chatRoom.RegisteredMembers)
+                .Include(chatRoom => chatRoom.ActiveMembers)
                 .ToListAsync();
         }
 
@@ -50,6 +52,8 @@ namespace ChatApp.data.Services.Implementation.SqlServer
                         .OrderBy(chatRoom => chatRoom.Id)
                         .Skip((pageNumber - 1) * pageSize)
                         .Include(chatRoom => chatRoom.ChatItems)
+                        .Include(chatRoom => chatRoom.RegisteredMembers)
+                        .Include(chatRoom => chatRoom.ActiveMembers)
                         .Take(pageSize)
                         .ToListAsync();
             return(collectionToReturn, paginationMetaData);
@@ -59,6 +63,8 @@ namespace ChatApp.data.Services.Implementation.SqlServer
         {
             return await db.ChatRooms
                 .Include(chatRoom => chatRoom.ChatItems)
+                .Include(chatRoom => chatRoom.RegisteredMembers)
+                .Include(chatRoom => chatRoom.ActiveMembers)
                 .FirstOrDefaultAsync(chatRoom => chatRoom.Id == chatRoomId);
         }
 
@@ -80,7 +86,7 @@ namespace ChatApp.data.Services.Implementation.SqlServer
             }
         }
 
-        public async Task AddMemberToChatRoomAsync(int chatRoomId, string userEmail)
+        public async Task AddRegisteredMemberToChatRoomAsync(int chatRoomId, string userEmail)
         {
             ChatRoomEntity? chatRoom = await db.ChatRooms.FindAsync(chatRoomId);
             if(chatRoom != null)
@@ -93,7 +99,7 @@ namespace ChatApp.data.Services.Implementation.SqlServer
             }
         }
 
-        public async Task RemoveMemberFromChatRoomAsync(int chatRoomId, string userEmail)
+        public async Task RemoveRegisteredMemberFromChatRoomAsync(int chatRoomId, string userEmail)
         {
             ChatRoomEntity? chatRoom = await db.ChatRooms.FindAsync(chatRoomId);
             if (chatRoom != null)
@@ -102,6 +108,32 @@ namespace ChatApp.data.Services.Implementation.SqlServer
                 if (member != null)
                 {
                     chatRoom.RegisteredMembers.Remove(member);
+                }
+            }
+        }
+
+        public async Task AddActiveMemberToChatRoomAsync(int chatRoomId, string userEmail)
+        {
+            ChatRoomEntity? chatRoom = await db.ChatRooms.FindAsync(chatRoomId);
+            if (chatRoom != null)
+            {
+                UserEntity? member = await userService.GetUserByEmailAsync(userEmail);
+                if (member != null)
+                {
+                    chatRoom.ActiveMembers.Add(member);
+                }
+            }
+        }
+
+        public async Task RemoveActiveMemberFromChatRoomAsync(int chatRoomId, string userEmail)
+        {
+            ChatRoomEntity? chatRoom = await db.ChatRooms.FindAsync(chatRoomId);
+            if (chatRoom != null)
+            {
+                UserEntity? member = await userService.GetUserByEmailAsync(userEmail);
+                if (member != null)
+                {
+                    chatRoom.ActiveMembers.Remove(member);
                 }
             }
         }
