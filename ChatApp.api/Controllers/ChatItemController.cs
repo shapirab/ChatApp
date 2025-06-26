@@ -30,7 +30,7 @@ namespace ChatApp.api.Controllers
             return Ok(mapper.Map<ICollection<ChatItemToReturn>>(chatItemEntities));
         }
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}", Name ="GetChatItem")]
         public async Task<ActionResult<ChatItemToReturn>> GetChatItemByIdAsync(int id)
         {
             var chatItemEntity = await chatItemService.GetChatItemByIdAsync(id);
@@ -49,7 +49,7 @@ namespace ChatApp.api.Controllers
             if (await chatItemService.SaveChangesAsync())
             {
                 ChatItemToReturn chatItemToReturn = mapper.Map<ChatItemToReturn>(chatItemEntity);
-                return CreatedAtAction(nameof(GetChatItemByIdAsync), new { id = chatItemEntity.Id }, chatItemToReturn);
+                return CreatedAtRoute("GetChatItem", new { id = chatItemEntity.Id }, chatItemToReturn);
             }
             return BadRequest("Failed to create the chat item.");
         }

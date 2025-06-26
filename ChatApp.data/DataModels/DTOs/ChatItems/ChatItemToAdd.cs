@@ -12,6 +12,6 @@ namespace ChatApp.data.DataModels.DTOs.ChatItems
     {
         public string UserId { get; set; } = null!;
         public string? Message { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

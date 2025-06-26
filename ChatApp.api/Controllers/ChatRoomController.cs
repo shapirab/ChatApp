@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using ChatApp.data.DataModels.DTOs.ChatItems;
 using ChatApp.data.DataModels.DTOs.ChatRooms;
 using ChatApp.data.DataModels.Entities;
 using ChatApp.data.Services.Interface;
@@ -161,12 +162,18 @@ namespace ChatApp.api.Controllers
         }
 
         [HttpPost("messages/{chatRoomId:int}")]
-        public async Task<ActionResult<bool>> AddMessageToChatRoomAsync(int chatRoomId, ChatItemEntity message)
+        public async Task<ActionResult<bool>> AddMessageToChatRoomAsync(int chatRoomId, [FromQuery]int chatItemId)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
             if (chatRoomEntity == null)
             {
                 return BadRequest("Chat room with provided id was not found");
+            }
+
+            ChatItemEntity? message = await chatItemService.GetChatItemByIdAsync(chatItemId);
+            if( message == null)
+            {
+                return BadRequest("Message with provided id was not found");
             }
 
             UserEntity? user = chatRoomEntity.ActiveMembers.FirstOrDefault(member => member.Id == message.UserId);
@@ -174,25 +181,27 @@ namespace ChatApp.api.Controllers
             {
                 return BadRequest("User with provided id is not active in the chat room");
             }
-            
-            await chatRoomService.RemoveActiveMemberFromChatRoomAsync(chatRoomId, user.Email);
+
+            ChatItemEntity chatEntity = mapper.Map<ChatItemEntity>(message);
+
+            await chatRoomService.AddMessageToChatRoomAsync(chatRoomId, chatEntity);
             return Ok(await chatRoomService.SaveChangesAsync());
         }
 
         [HttpDelete("messages/{chatRoomId:int}")]
-        public async Task<ActionResult<bool>> RemoveMessageFromChatRoomAsync(int chatRoomId, [FromQuery]int messageId)
+        public async Task<ActionResult<bool>> RemoveMessageFromChatRoomAsync(int chatRoomId, [FromQuery]int chatItemId)
         {
             ChatRoomEntity? chatRoomEntity = await chatRoomService.GetChatRoomByIdAsync(chatRoomId);
             if (chatRoomEntity == null)
             {
                 return BadRequest("Chat room with provided id was not found");
             }
-            ChatItemEntity? message = await chatItemService.GetChatItemByIdAsync(messageId);
+            ChatItemEntity? message = await chatItemService.GetChatItemByIdAsync(chatItemId);
             if (message == null)
             {
                 return BadRequest("Message with provided id was not found");
             }
-            await chatRoomService.RemoveMessageFromChatRoomAsync(chatRoomId, messageId);
+            await chatRoomService.RemoveMessageFromChatRoomAsync(chatRoomId, chatItemId);
             return Ok(await chatRoomService.SaveChangesAsync());
         }
     }
